@@ -7,12 +7,10 @@ import { Globe, Users, Leaf } from "lucide-react"
 import { TopBar } from "@/components/ui/topbar"
 import { InitiativesCount } from "@/components/InitiativesCount"
 import dynamic from 'next/dynamic'
-import { useRef, useState } from 'react'
-import { Activity } from '@/lib/types'
 
-// Dynamically import MapClient with no SSR
+// Dynamically import MapComponent with no SSR
 const MapComponent = dynamic(
-  () => import('@/components/MapClient').then((mod) => mod.MapClient),
+  () => import('@/components/map-component').then((mod) => mod.MapComponent),
   {
     ssr: false,
     loading: () => (
@@ -24,15 +22,12 @@ const MapComponent = dynamic(
 )
 
 export default function Home() {
-  const mapRef = useRef(null)
-  const [activities, setActivities] = useState<Activity[]>([])
-
   return (
     <main className="flex min-h-screen flex-col bg-black text-white">
       <TopBar />
 
       <div className="flex-1 relative">
-        <MapComponent activities={activities} mapRef={mapRef} />
+        <MapComponent />
 
         {/* Global Impact Panel - Fixed at bottom */}
         <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-black/80 backdrop-blur-md p-4 rounded-lg border border-cyan-900/50 z-[500] shadow-[0_0_15px_rgba(6,182,212,0.2)]">
@@ -44,7 +39,7 @@ export default function Home() {
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 mb-1">
                 <Leaf className="w-5 h-5 text-green-400" />
               </div>
-              <InitiativesCount staticCount={42} />
+              <InitiativesCount />
               <span className="text-xs text-gray-400 text-center">Active Initiatives</span>
             </div>
             <div className="flex flex-col items-center">

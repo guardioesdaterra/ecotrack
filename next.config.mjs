@@ -13,11 +13,9 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_KEY,
-  },
-  // Removido output: 'export' para permitir páginas dinâmicas
+  output: 'export',
+  basePath: process.env.NODE_ENV === 'production' ? '/EarthTrack-Global' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/EarthTrack-Global/' : '',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -34,6 +32,7 @@ const nextConfig = {
   },
   serverExternalPackages: ['leaflet'],
   allowedDevOrigins: ['localhost', '10.0.0.132'],
+  serverExternalPackages: ['leaflet'],
   webpack: (config) => {
     config.externals = [...config.externals, { leaflet: 'L' }]
     return config
