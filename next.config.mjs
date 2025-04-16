@@ -34,7 +34,6 @@ const nextConfig = {
   },
   serverExternalPackages: ['leaflet'],
   allowedDevOrigins: ['localhost', '10.0.0.132'],
-  serverExternalPackages: ['leaflet'],
   webpack: (config) => {
     config.externals = [...config.externals, { leaflet: 'L' }]
     return config

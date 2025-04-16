@@ -6,6 +6,9 @@ export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false)
 
   useEffect(() => {
+    // Handle SSR case where window is not defined
+    if (typeof window === 'undefined') return
+
     const media = window.matchMedia(query)
     if (media.matches !== matches) {
       setMatches(media.matches)
@@ -18,4 +21,9 @@ export function useMediaQuery(query: string): boolean {
   }, [matches, query])
 
   return matches
+}
+
+// Unified mobile detection hook
+export function useIsMobile() {
+  return useMediaQuery('(max-width: 767px)')
 }
