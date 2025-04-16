@@ -47,8 +47,27 @@ npm run dev
 npm run deploy
 ```
 
+## Configuração de Segurança
+
+Para configurar as chaves do Supabase:
+
+1. Acesse: https://github.com/guardioesdaterra/ecotrack/settings/secrets/actions
+2. Clique em "New repository secret"
+3. Adicione:
+   - Nome: SUPABASE_URL
+   - Valor: sua URL do Supabase
+4. Clique em "New repository secret" novamente
+5. Adicione:
+   - Nome: SUPABASE_KEY
+   - Valor: sua chave pública do Supabase
+
 ## Tecnologias utilizadas
 - Next.js 15
 - React 19
 - Tailwind CSS
 - Supabase
+
+## Fluxo de Deploy
+1. `npm run deploy` gera os arquivos estáticos na pasta /out
+2. GitHub Actions publica automaticamente na branch gh-pages
+3. GitHub Pages serve o conteúdo estático
