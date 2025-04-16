@@ -17,7 +17,7 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_KEY,
   },
-  output: 'export',
+  // Removido output: 'export' para permitir páginas dinâmicas
   eslint: {
     ignoreDuringBuilds: true,
   },

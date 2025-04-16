@@ -3,13 +3,15 @@ import { ThemeProvider } from "@/components/theme-provider"
 import type { Metadata, Viewport } from 'next'
 import "./globals.css"
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "EcoTrack Global",
   description: "Track environmental initiatives worldwide",
   manifest: "/manifest.json",
-  generator: 'v0.dev'
+  generator: 'Earth Guardians'
 }
 
 export const viewport: Viewport = {
