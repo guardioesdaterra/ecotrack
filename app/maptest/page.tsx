@@ -11,8 +11,10 @@ const MapClient = dynamic(() => import('@/components/MapClient'), {
 
 export default function MapTestPage() {
   return (
-    <Suspense fallback={<Loading />}>
-      <MapClient />
-    </Suspense>
+    <div className="h-screen w-full">
+      <Suspense fallback={<Loading />}>
+        <MapClient />
+      </Suspense>
+    </div>
   )
 }

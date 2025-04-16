@@ -1,14 +1,63 @@
 "use client"
 
-import L from 'leaflet'
-import "leaflet/dist/leaflet.css"
 import { useEffect, useRef, useState } from "react"
-import { MapContainer, TileLayer, useMap, ZoomControl, Marker, Popup } from "react-leaflet"
+import dynamic from 'next/dynamic'
+import Loading from '@/components/ui/loading'
 import { supabase } from "@/lib/supabaseClient"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
 
+// CSS do Leaflet - deve vir antes dos componentes
+import "leaflet/dist/leaflet.css"
+
+// Carrega o Leaflet apenas no client-side
+let L: any;
+if (typeof window !== 'undefined') {
+  L = require('leaflet')
+  require('leaflet/dist/leaflet.css')
+}
+
+// Tipagem para o Leaflet
+declare global {
+  interface Window {
+    L: typeof L;
+  }
+}
+
+// Import useMap directly (not dynamically) as it's a hook that can't be used with dynamic imports
+import { useMap as reactLeafletUseMap } from "react-leaflet"
+
+// Componentes do react-leaflet importados dinamicamente
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  {
+    ssr: false,
+    loading: () => <Loading />
+  }
+)
+
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+)
+
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+)
+
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+)
+
+const ZoomControl = dynamic(
+  () => import('react-leaflet').then((mod) => mod.ZoomControl),
+  { ssr: false }
+)
+
+// Define our Activity type to match the one in particle-effect.tsx
 interface Activity {
   id: number
   lat: number
@@ -17,6 +66,7 @@ interface Activity {
   title: string
   intensity: number
   created_at: string
+  color: string // Added to match ParticleEffect's Activity type
 }
 
 interface Connection {
@@ -62,8 +112,10 @@ function ActivityNode({ activity }: { activity: Activity }) {
   )
 }
 
+// Use the directly imported useMap hook
 const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) => {
-  const map = useMap()
+  // Using the directly imported hook
+  const map = reactLeafletUseMap()
   const [connections, setConnections] = useState<Connection[]>([])
 
   useEffect(() => {
@@ -123,8 +175,10 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)]
 }
 
+// Using the directly imported useMap hook
 function MapController() {
-  const map = useMap()
+  // Using the directly imported hook
+  const map = reactLeafletUseMap()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   useEffect(() => {
@@ -184,7 +238,14 @@ export default function MapClient() {
           .order('created_at', { ascending: false })
 
         if (supabaseError) throw supabaseError
-        setActivities(data as Activity[])
+        
+        // Add default color property if not present in data
+        const activitiesWithColor = (data || []).map(activity => ({
+          ...activity,
+          color: activity.color || getRandomColor()
+        }))
+        
+        setActivities(activitiesWithColor as Activity[])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {

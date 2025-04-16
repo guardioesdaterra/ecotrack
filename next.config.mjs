@@ -13,7 +13,11 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  reactStrictMode: true,
+  experimental: {
+    appDir: true,
+  },
+  trailingSlash: true,
   basePath: process.env.NODE_ENV === 'production' ? '/EarthTrack-Global' : '',
   assetPrefix: process.env.NODE_ENV === 'production' ? '/EarthTrack-Global/' : '',
   eslint: {
