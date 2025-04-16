@@ -4,7 +4,8 @@ import dynamic from 'next/dynamic'
 import L from 'leaflet'
 import "leaflet/dist/leaflet.css"
 import { useEffect, useRef, useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
+import { getSupabaseClient } from "@/lib/supabaseClient"
+import { MapContainer, TileLayer, useMap, ZoomControl, Marker, Popup } from "react-leaflet"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -68,7 +69,13 @@ const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) =
 
   useEffect(() => {
     const fetchConnections = async () => {
-      const { data, error } = await supabase
+      const client = getSupabaseClient()
+      if (!client) {
+        console.error('Supabase client not initialized')
+        return
+      }
+
+      const { data, error } = await client
         .from('connections')
         .select('*')
       if (error) {
@@ -178,7 +185,12 @@ export default function MapTestPage() {
     const fetchActivities = async () => {
       try {
         setLoading(true)
-        const { data, error: supabaseError } = await supabase
+        const client = getSupabaseClient()
+        if (!client) {
+          throw new Error('Supabase client not initialized')
+        }
+
+        const { data, error: supabaseError } = await client
           .from('activities')
           .select('*')
           .order('created_at', { ascending: false })
