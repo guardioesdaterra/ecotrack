@@ -4,22 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useMap } from "react-leaflet"
 import { supabase } from "@/lib/supabaseClient"
 import L from "leaflet"
-
-interface Activity {
-  id: number
-  lat: number
-  lng: number
-  type: string
-  title: string
-  intensity: number
-  color: string
-}
-
-interface Connection {
-  id: number
-  from_activity_id: number
-  to_activity_id: number
-}
+import { Activity, Connection } from "@/lib/types"
 
 interface Particle {
   x: number
@@ -107,7 +92,7 @@ export function ParticleEffect({ activities }: { activities: Activity[] }) {
               targetY: toPoint.y,
               speed: 0.8 + Math.random() * 1.8,
               size: 0.5  + Math.random() * 2.5,
-              color: fromActivity.color || '#ffffff',
+              color: fromActivity.color || 'rgba(255, 255, 255, 0.7)',
               alpha: 0.2 + Math.random() * 0.6,
               trail: [],
               trailLength: Math.floor(3 + Math.random() * 5),

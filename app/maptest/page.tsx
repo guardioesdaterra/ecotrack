@@ -1,9 +1,9 @@
 "use client"
 
+import dynamic from 'next/dynamic'
 import L from 'leaflet'
 import "leaflet/dist/leaflet.css"
 import { useEffect, useRef, useState } from "react"
-import { MapContainer, TileLayer, useMap, ZoomControl, Marker, Popup } from "react-leaflet"
 import { supabase } from "@/lib/supabaseClient"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
@@ -211,34 +211,26 @@ export default function MapTestPage() {
     )
   }
 
+  const MapWithNoSSR = dynamic(
+    () => import('@/components/MapClient').then((mod) => mod.MapClient),
+    {
+      ssr: false,
+      loading: () => (
+        <div className="w-full h-screen bg-black flex items-center justify-center">
+          <div className="h-16 w-16 rounded-full bg-neon-cyan animate-neon-pulse"></div>
+        </div>
+      )
+    }
+  )
+
   return (
     <div className="w-full h-screen relative">
       <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/10 to-neon-cyan/10 pointer-events-none z-[399]"></div>
 
-      <MapContainer
-        ref={mapRef}
-        center={[20, 0]}
-        zoom={2.5}
-        style={{ height: "100%", width: "100%" }}
-        zoomControl={false}
-        attributionControl={false}
-        worldCopyJump={true}
-        minZoom={1.5}
-        maxZoom={7}
-        className="dark-map"
-      >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
-        <ZoomControl position="bottomright" />
-        <MapController />
-        <ConnectionLines activities={activities} />
-        {activities.map((activity) => (
-          <ActivityNode key={activity.id} activity={activity} />
-        ))}
-        <ParticleEffect activities={activities} />
-      </MapContainer>
+      <MapWithNoSSR 
+        activities={activities}
+        mapRef={mapRef}
+      />
 
       <div className="absolute inset-0 pointer-events-none z-[399] bg-[url('/grid-overlay.png')] opacity-20 mix-blend-overlay"></div>
       <div className="absolute inset-0 pointer-events-none z-[399] bg-[url('/scanline.png')] opacity-10 mix-blend-lighten" style={{ backgroundBlendMode: 'screen' }}></div>
