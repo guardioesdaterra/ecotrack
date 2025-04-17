@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useMap } from "react-leaflet"
-import { supabase } from "@/lib/supabaseClient"
-import L from "leaflet"
+import { supabase } from "@/lib/supabase-client"
+import * as L from "leaflet"
 import { ActivityWithVisuals, Connection } from "@/lib/types/supabase"
 
 interface Particle {
