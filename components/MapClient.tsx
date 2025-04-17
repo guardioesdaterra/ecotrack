@@ -7,19 +7,13 @@ import { supabase } from "@/lib/supabaseClient"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { initLeaflet } from "@/lib/leaflet-init"
 
 // CSS for Leaflet - can be imported directly in client components
 import "leaflet/dist/leaflet.css"
 
-// Load Leaflet only on client-side
-let L: any;
-if (typeof window !== 'undefined') {
-  try {
-    L = window.L || require('leaflet');
-  } catch (e) {
-    console.error("Error loading Leaflet:", e);
-  }
-}
+// Initialize Leaflet
+let L = typeof window !== 'undefined' ? initLeaflet() : null;
 
 // Type definition for Leaflet
 declare global {
