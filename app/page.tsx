@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { AuthButtons } from "@/components/auth-buttons"
 import { Globe, Users, Leaf } from "lucide-react"
-import { TopBar } from "@/components/ui/topbar"
+import { TopBar } from "@/components/ui/TopBar"
 import { InitiativesCount } from "@/components/InitiativesCount"
 import dynamic from 'next/dynamic'
 

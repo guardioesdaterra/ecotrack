@@ -19,8 +19,29 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 
+// TypeScript interfaces for activity data structures
+interface ActivityUpdate {
+  date: string;
+  note: string;
+  image: string;
+  beforeImage?: string;
+  afterImage?: string;
+}
+
+interface Activity {
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  location: string;
+  coordinates: [number, number];
+  created: string;
+  updated: string;
+  updates: ActivityUpdate[];
+}
+
 // Sample data for demonstration
-const mockActivities = [
+const mockActivities: Activity[] = [
   {
     id: "act-1",
     title: "Community Forest Restoration",
@@ -78,13 +99,22 @@ const mockActivities = [
   },
 ]
 
+interface User {
+  name: string;
+}
+
+// Define SVG props interface
+interface SVGProps extends React.SVGAttributes<SVGElement> {
+  className?: string;
+}
+
 export default function MonitorPage() {
-  const [user, setUser] = useState({ name: "Maria Silva" }) // For demo purposes, assume logged in
-  const [selectedActivity, setSelectedActivity] = useState(null)
-  const [selectedUpdate, setSelectedUpdate] = useState(null)
+  const [user, setUser] = useState<User | null>({ name: "Maria Silva" }) // For demo purposes, assume logged in
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
+  const [selectedUpdate, setSelectedUpdate] = useState<ActivityUpdate | null>(null)
   const [showBeforeAfter, setShowBeforeAfter] = useState(false)
 
-  const handleSelectActivity = (activity) => {
+  const handleSelectActivity = (activity: Activity) => {
     setSelectedActivity(activity)
     setSelectedUpdate(null)
     setShowBeforeAfter(false)
@@ -96,7 +126,7 @@ export default function MonitorPage() {
     setShowBeforeAfter(false)
   }
 
-  const handleViewUpdate = (update) => {
+  const handleViewUpdate = (update: ActivityUpdate) => {
     setSelectedUpdate(update)
     setShowBeforeAfter(false)
   }
@@ -650,7 +680,7 @@ export default function MonitorPage() {
 }
 
 // Custom icons for activity types
-function TreeIcon(props) {
+function TreeIcon(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -670,7 +700,7 @@ function TreeIcon(props) {
   )
 }
 
-function WaterIcon(props) {
+function WaterIcon(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -689,7 +719,7 @@ function WaterIcon(props) {
   )
 }
 
-function SunIcon(props) {
+function SunIcon(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -716,7 +746,7 @@ function SunIcon(props) {
   )
 }
 
-function LeafIcon(props) {
+function LeafIcon(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -736,7 +766,7 @@ function LeafIcon(props) {
   )
 }
 
-function BookIcon(props) {
+function BookIcon(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -755,7 +785,7 @@ function BookIcon(props) {
   )
 }
 
-function GlobeIcon(props) {
+function GlobeIcon(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -776,7 +806,7 @@ function GlobeIcon(props) {
   )
 }
 
-function User(props) {
+function User(props: SVGProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
