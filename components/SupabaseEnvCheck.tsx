@@ -20,8 +20,8 @@ export function SupabaseEnvCheck() {
         setStatus('success');
         setMessage(`Conexão com o Supabase estabelecida com sucesso! Encontramos ${count} atividades.`);
         setDetails({
-          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          hasUrl: !!process.env.SUPABASE_URL,
+          hasKey: !!process.env.SUPABASE_ANON_KEY,
         });
       } catch (error: any) {
         console.error('Erro ao conectar com o Supabase:', error);
@@ -29,8 +29,8 @@ export function SupabaseEnvCheck() {
         setMessage(`Erro ao conectar com o Supabase: ${error.message || 'Erro desconhecido'}`);
         setDetails({
           error: error.message,
-          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          hasUrl: !!process.env.PUBLIC_SUPABASE_URL,
+          hasKey: !!process.env.UPABASE_ANON_KEY,
         });
       }
     }
