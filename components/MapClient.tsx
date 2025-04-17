@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import dynamic from 'next/dynamic'
 import Loading from '@/components/ui/loading'
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from "@/lib/supabaseClient-new"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"

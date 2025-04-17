@@ -1,19 +1,37 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { checkSupabaseConnection } from '@/lib/supabaseClient';
+import { checkSupabaseConnection } from '@/lib/supabaseClient-new';
 
 export function SupabaseEnvCheck() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verificando conexão com o Supabase...');
   const [details, setDetails] = useState<any>(null);
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
+    // Prevent multiple calls
+    if (hasChecked) return;
+    
     async function checkConnection() {
       try {
-        // Verificar se as variáveis de ambiente estão definidas
-        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-          throw new Error("Variáveis de ambiente SUPABASE_URL ou SUPABASE_ANON_KEY não estão definidas");
+        setHasChecked(true);
+        
+        // Verificar se as variáveis de ambiente estão definidas no cliente
+        const envVars = {
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+          supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+        };
+        
+        if (!envVars.supabaseUrl || !envVars.supabaseAnonKey) {
+          setStatus('error');
+          setMessage("Variáveis de ambiente SUPABASE_URL ou SUPABASE_ANON_KEY não estão definidas no cliente");
+          setDetails({
+            hasUrl: !!envVars.supabaseUrl,
+            hasKey: !!envVars.supabaseAnonKey,
+            environment: process.env.NODE_ENV
+          });
+          return;
         }
         
         const { count, error } = await checkSupabaseConnection();
@@ -25,11 +43,8 @@ export function SupabaseEnvCheck() {
         setStatus('success');
         setMessage(`Conexão com o Supabase estabelecida com sucesso! Encontramos ${count} atividades.`);
         setDetails({
-          hasUrl: !!process.env.SUPABASE_URL,
-          hasKey: !!process.env.SUPABASE_ANON_KEY,
-          url: process.env.SUPABASE_URL,
-          keyPrefix: process.env.SUPABASE_ANON_KEY ? 
-            process.env.SUPABASE_ANON_KEY.substring(0, 5) + '...' : null
+          hasUrl: true,
+          hasKey: true
         });
       } catch (error: any) {
         console.error('Erro ao conectar com o Supabase:', error);
@@ -37,17 +52,13 @@ export function SupabaseEnvCheck() {
         setMessage(`Erro ao conectar com o Supabase: ${error.message || 'Erro desconhecido'}`);
         setDetails({
           error: error.message,
-          hasUrl: !!process.env.SUPABASE_URL,
-          hasKey: !!process.env.SUPABASE_ANON_KEY,
-          url: process.env.SUPABASE_URL,
-          keyPrefix: process.env.SUPABASE_ANON_KEY ? 
-            process.env.SUPABASE_ANON_KEY.substring(0, 5) + '...' : null
+          environment: process.env.NODE_ENV
         });
       }
     }
     
     checkConnection();
-  }, []);
+  }, [hasChecked]);
 
   const bgColor = status === 'loading' 
     ? 'bg-yellow-100 dark:bg-yellow-900' 

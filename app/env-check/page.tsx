@@ -1,6 +1,7 @@
 import { SupabaseEnvCheck } from "@/components/SupabaseEnvCheck";
 
 export default function EnvCheckPage() {
+  // Forçar renderização no lado do cliente para acessar variáveis de ambiente do navegador
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Verificação de Variáveis de Ambiente</h1>
@@ -21,8 +22,11 @@ export default function EnvCheckPage() {
           
           <div>
             <h3 className="font-medium mb-2">Variáveis Públicas do Supabase</h3>
-            <p>SUPABASE_URL: {process.env.SUPABASE_URL ? '✅ definido' : '❌ não definido'}</p>
-            <p>SUPABASE_ANON_KEY: {process.env.SUPABASE_ANON_KEY ? '✅ definido' : '❌ não definido'}</p>
+            <p className="mb-2">Em ambientes de produção, use os seguintes formatos de variáveis:</p>
+            <ul className="list-disc pl-5">
+              <li>SUPABASE_URL - para acesso no servidor</li>
+              <li>NEXT_PUBLIC_SUPABASE_URL - para acesso no cliente</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -37,6 +41,8 @@ export default function EnvCheckPage() {
             <ul className="list-disc pl-5 mt-2">
               <li><code>SUPABASE_URL</code>: URL do seu projeto no Supabase</li>
               <li><code>SUPABASE_ANON_KEY</code>: Chave anônima do seu projeto no Supabase</li>
+              <li><code>NEXT_PUBLIC_SUPABASE_URL</code>: (Mesma URL) para acesso cliente-side</li>
+              <li><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>: (Mesma chave) para acesso cliente-side</li>
             </ul>
           </li>
           <li>Clique em <strong>Save</strong> (Salvar)</li>
