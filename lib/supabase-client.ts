@@ -7,6 +7,13 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC
 // Os valores padrão são mantidos como fallback, mas em produção, use as variáveis de ambiente
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Função para verificar se o cliente Supabase foi inicializado corretamente
+export function isSupabaseInitialized(): boolean {
+  return Boolean(supabaseUrl && supabaseAnonKey && supabase);
+}
+
+
+
 // Adicionando uma função de verificação para diagnóstico
 export function checkSupabaseConnection() {
   console.log('Supabase URL:', supabaseUrl);

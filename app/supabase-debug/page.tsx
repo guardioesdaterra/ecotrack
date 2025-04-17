@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { supabase, checkSupabaseConnection } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 
 export default function SupabaseDebugPage() {
@@ -12,6 +12,16 @@ export default function SupabaseDebugPage() {
   async function testConnection() {
     setIsLoading(true);
     setError(null);
+
+
+    const connectionResult = await checkSupabaseConnection();
+    setResult(connectionResult);
+
+    if (connectionResult.error) {
+      setError(connectionResult.error.message);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
