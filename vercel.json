@@ -1,24 +1,35 @@
 {
   "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
   "routes": [
     {
       "src": "/grid-overlay.png",
-      "dest": "/public/grid-overlay.png"
+      "dest": "/grid-overlay.png"
     },
     {
       "src": "/scanline.png",
-      "dest": "/public/scanline.png"
-    },
-    {
-      "handle": "filesystem"
+      "dest": "/scanline.png"
     },
     {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/"
+      "src": "/_next/static/(.+)",
+      "headers": { "cache-control": "public,max-age=31536000,immutable" },
+      "continue": true
+    },
+    {
+      "src": "/_next/.*",
+      "dest": "/_next/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ],
   "images": {

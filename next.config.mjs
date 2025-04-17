@@ -14,33 +14,28 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  swcMinify: true,
+  images: {
+    domains: ['unpkg.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'unpkg.com',
+      },
+    ],
+  },
+  webpack: (config) => {
+    // Fixes npm packages that depend on `fs` module
+    config.resolve.fallback = { fs: false };
+    return config;
+  },
+  // Make sure static files are accessible in production
+  output: 'standalone',
+  assetPrefix: undefined,
   experimental: {
     appDir: true,
   },
-  trailingSlash: true,
-  basePath: process.env.NODE_ENV === 'production' ? '/EarthTrack-Global' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/EarthTrack-Global/' : '',
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
-    unoptimized: true,
-  },
-  experimental: {
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
-  },
-  serverExternalPackages: ['leaflet'],
-  allowedDevOrigins: ['localhost', '10.0.0.132'],
-  serverExternalPackages: ['leaflet'],
-  webpack: (config) => {
-    config.externals = [...config.externals, { leaflet: 'L' }]
-    return config
-  }
+  transpilePackages: ['leaflet', 'react-leaflet'],
 }
 
 if (userConfig) {
