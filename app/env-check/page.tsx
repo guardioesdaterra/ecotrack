@@ -32,6 +32,27 @@ export default function EnvCheckPage() {
       </div>
       
       <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Páginas de Diagnóstico Adicionais</h2>
+        <ul className="list-disc pl-5 space-y-2">
+          <li>
+            <a href="/basic-test" className="text-blue-500 hover:underline">
+              Teste Básico
+            </a> - Teste simples de conexão Supabase
+          </li>
+          <li>
+            <a href="/direct-test" className="text-blue-500 hover:underline">
+              Teste Direto
+            </a> - Teste a API do Supabase diretamente com fetch
+          </li>
+          <li>
+            <a href="/supabase-debug" className="text-blue-500 hover:underline">
+              Debug Supabase
+            </a> - Diagnóstico detalhado do Supabase
+          </li>
+        </ul>
+      </div>
+      
+      <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Instruções para Configurar Variáveis no Vercel</h2>
         <ol className="list-decimal pl-5 space-y-2">
           <li>Acesse o painel do Vercel e selecione seu projeto</li>
