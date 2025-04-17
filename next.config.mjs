@@ -14,7 +14,6 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   images: {
     domains: ['unpkg.com'],
     remotePatterns: [
@@ -31,10 +30,6 @@ const nextConfig = {
   },
   // Make sure static files are accessible in production
   output: 'standalone',
-  assetPrefix: undefined,
-  experimental: {
-    appDir: true,
-  },
   transpilePackages: ['leaflet', 'react-leaflet'],
 }
 
