@@ -30,9 +30,4 @@ export interface SupabaseError {
   details?: string
   hint?: string
   code?: string
-}
-
-// Tipo para atividade com propriedades calculadas/visuais (não no DB)
-export interface ActivityWithVisuals extends Activity {
-  color?: string // Propriedade visual não presente no banco de dados
 } 

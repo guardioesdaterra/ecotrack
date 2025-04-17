@@ -3,8 +3,22 @@
 import { useEffect, useRef, useState } from "react"
 import { useMap } from "react-leaflet"
 import { supabase } from "@/lib/supabase-client"
-import * as L from "leaflet"
-import { ActivityWithVisuals, Connection } from "@/lib/types/supabase"
+import L from "leaflet"
+import { Activity, Connection } from "@/lib/types/supabase"
+
+// Mapeamento de tipos de atividades para cores específicas (duplicado de MapClient)
+const TYPE_COLOR_MAP: Record<string, string> = {
+  'reforestation': '#00FF00', // Verde para reflorestamento
+  'cleanup': '#0000FF',       // Azul para limpeza
+  'renewable': '#FF00FF',     // Magenta para energia renovável
+  'conservation': '#FFFF00',  // Amarelo para conservação
+  // Adicione outros tipos conforme necessário
+};
+
+// Função para obter a cor com base no tipo de atividade
+function getColorByType(type: string): string {
+  return TYPE_COLOR_MAP[type] || "#FF0000"; // Vermelho como cor padrão
+}
 
 interface Particle {
   x: number
@@ -19,7 +33,7 @@ interface Particle {
   trailLength: number
 }
 
-export function ParticleEffect({ activities }: { activities: ActivityWithVisuals[] }) {
+export function ParticleEffect({ activities }: { activities: Activity[] }) {
   const map = useMap()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const animationRef = useRef<number | null>(null)
@@ -78,12 +92,23 @@ export function ParticleEffect({ activities }: { activities: ActivityWithVisuals
         const toActivity = activities.find((a) => a.id === connection.to_activity_id)
 
         if (fromActivity && toActivity) {
+          // Verificar coordenadas válidas
+          if (
+            typeof fromActivity.lat !== 'number' || 
+            typeof fromActivity.lng !== 'number' ||
+            typeof toActivity.lat !== 'number' || 
+            typeof toActivity.lng !== 'number'
+          ) {
+            return; // Pular esta conexão
+          }
+
           const fromPoint = map.latLngToContainerPoint([fromActivity.lat, fromActivity.lng])
           const toPoint = map.latLngToContainerPoint([toActivity.lat, toActivity.lng])
 
           // Create a new particle
           if (Math.random() < 0.03) {
             // Control particle density
+            const color = getColorByType(fromActivity.type)
             particles.push({
               x: fromPoint.x,
               y: fromPoint.y,
@@ -91,7 +116,7 @@ export function ParticleEffect({ activities }: { activities: ActivityWithVisuals
               targetY: toPoint.y,
               speed: 0.8 + Math.random() * 1.8,
               size: 0.5  + Math.random() * 2.5,
-              color: fromActivity.color || getRandomColor(),
+              color,
               alpha: 0.2 + Math.random() * 0.6,
               trail: [],
               trailLength: Math.floor(3 + Math.random() * 5),
@@ -196,17 +221,4 @@ export function ParticleEffect({ activities }: { activities: ActivityWithVisuals
   }, [map, connections, activities, loading, error])
 
   return null
-}
-
-// Helper function to get a random color
-function getRandomColor() {
-  const colors = [
-    "rgba(0, 255, 255,", // Cyan
-    "rgba(255, 0, 255,", // Magenta
-    "rgba(255, 255, 0,", // Yellow
-    "rgba(0, 255, 0,",   // Green
-    "rgba(0, 128, 255,", // Blue
-    "rgba(255, 0, 128,"  // Red
-  ]
-  return colors[Math.floor(Math.random() * colors.length)]
 }

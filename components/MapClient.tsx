@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { initLeaflet } from "@/lib/leaflet-init"
-import { Activity, ActivityWithVisuals, Connection } from "@/lib/types/supabase"
+import { Activity, Connection } from "@/lib/types/supabase"
 
 // CSS for Leaflet - can be imported directly in client components
 import "leaflet/dist/leaflet.css"
@@ -55,8 +55,22 @@ const ZoomControl = dynamic(
   { ssr: false }
 )
 
+// Mapeamento de tipos de atividades para cores específicas
+const TYPE_COLOR_MAP: Record<string, string> = {
+  'reforestation': '#00FF00', // Verde para reflorestamento
+  'cleanup': '#0000FF',       // Azul para limpeza
+  'renewable': '#FF00FF',     // Magenta para energia renovável
+  'conservation': '#FFFF00',  // Amarelo para conservação
+  // Adicione outros tipos conforme necessário
+};
+
+// Função para obter a cor com base no tipo de atividade
+function getColorByType(type: string): string {
+  return TYPE_COLOR_MAP[type] || "#FF0000"; // Vermelho como cor padrão
+}
+
 // Componente para renderizar um único marcador de atividade
-function ActivityNode({ activity }: { activity: ActivityWithVisuals }) {
+function ActivityNode({ activity }: { activity: Activity }) {
   const [showPopup, setShowPopup] = useState(false)
 
   // Only create icon when L is available
@@ -97,7 +111,7 @@ function ActivityNode({ activity }: { activity: ActivityWithVisuals }) {
 }
 
 // Use the directly imported useMap hook
-const ConnectionLines: React.FC<{ activities: ActivityWithVisuals[] }> = ({ activities }) => {
+const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) => {
   // Using the directly imported hook
   const map = reactLeafletUseMap()
   const [connections, setConnections] = useState<Connection[]>([])
@@ -149,7 +163,7 @@ const ConnectionLines: React.FC<{ activities: ActivityWithVisuals[] }> = ({ acti
         ]
 
         const line = L.polyline(latlngs, {
-          color: getRandomColor(),
+          color: getColorByType(fromActivity.type),
           weight: 3,
           opacity: 0.7,
         })
@@ -164,13 +178,6 @@ const ConnectionLines: React.FC<{ activities: ActivityWithVisuals[] }> = ({ acti
   }, [map, activities, connections, isLoading])
 
   return null
-}
-
-function getRandomColor() {
-  const colors = [
-    "#00ffff", "#ff00ff", "#ffff00", "#00ff00", "#ff0000", "#0000ff"
-  ]
-  return colors[Math.floor(Math.random() * colors.length)]
 }
 
 // Using the directly imported useMap hook
@@ -214,7 +221,7 @@ function MapController() {
 }
 
 export default function MapClient() {
-  const [activities, setActivities] = useState<ActivityWithVisuals[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -257,13 +264,7 @@ export default function MapClient() {
           throw new Error('Dados não encontrados')
         }
         
-        // Transform activities to include a color property for visualization
-        const transformedActivities = data.map(activity => ({
-          ...activity,
-          color: getRandomColor()
-        })) satisfies ActivityWithVisuals[]
-        
-        setActivities(transformedActivities)
+        setActivities(data)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
         setError(`Falha ao buscar atividades: ${errorMessage}`)
