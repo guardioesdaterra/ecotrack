@@ -11,6 +11,11 @@ export function SupabaseEnvCheck() {
   useEffect(() => {
     async function checkConnection() {
       try {
+        // Verificar se as variáveis de ambiente estão definidas
+        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+          throw new Error("Variáveis de ambiente SUPABASE_URL ou SUPABASE_ANON_KEY não estão definidas");
+        }
+        
         const { count, error } = await checkSupabaseConnection();
         
         if (error) {
@@ -22,6 +27,9 @@ export function SupabaseEnvCheck() {
         setDetails({
           hasUrl: !!process.env.SUPABASE_URL,
           hasKey: !!process.env.SUPABASE_ANON_KEY,
+          url: process.env.SUPABASE_URL,
+          keyPrefix: process.env.SUPABASE_ANON_KEY ? 
+            process.env.SUPABASE_ANON_KEY.substring(0, 5) + '...' : null
         });
       } catch (error: any) {
         console.error('Erro ao conectar com o Supabase:', error);
@@ -29,8 +37,11 @@ export function SupabaseEnvCheck() {
         setMessage(`Erro ao conectar com o Supabase: ${error.message || 'Erro desconhecido'}`);
         setDetails({
           error: error.message,
-          hasUrl: !!process.env.PUBLIC_SUPABASE_URL,
-          hasKey: !!process.env.UPABASE_ANON_KEY,
+          hasUrl: !!process.env.SUPABASE_URL,
+          hasKey: !!process.env.SUPABASE_ANON_KEY,
+          url: process.env.SUPABASE_URL,
+          keyPrefix: process.env.SUPABASE_ANON_KEY ? 
+            process.env.SUPABASE_ANON_KEY.substring(0, 5) + '...' : null
         });
       }
     }

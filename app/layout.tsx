@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "EcoTrack Global",
   description: "Track environmental initiatives worldwide",
   manifest: "/manifest.json",
-  generator: 'v0.dev'
+  generator: 'EarthGuardians'
 }
 
 export const viewport: Viewport = {

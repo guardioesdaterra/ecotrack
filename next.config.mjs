@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Desativa modo estrito para evitar duplas renderizações
   images: {
     domains: ['unpkg.com'],
     remotePatterns: [
@@ -8,20 +8,32 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'unpkg.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'cartodb-basemaps-*.global.ssl.fastly.net',
+      },
     ],
   },
   webpack: (config) => {
-    // Fixes npm packages that depend on `fs` module
-    config.resolve.fallback = { fs: false };
+    // Fix para pacotes que dependem do módulo 'fs'
+    config.resolve.fallback = { 
+      fs: false,
+      net: false,
+      tls: false,
+    };
     return config;
   },
   // Configuração para melhor compatibilidade com Vercel
   output: 'standalone',
   transpilePackages: ['leaflet', 'react-leaflet'],
-  // Otimizações para SPA
+  // Desativa otimização experimental que pode causar problemas
   experimental: {
     missingSuspenseWithCSRBailout: false,
+  },
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   }
 }
 
-export default nextConfig 
+export default nextConfig
