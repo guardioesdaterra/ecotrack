@@ -26,10 +26,6 @@ const nextConfig = {
   // Configuração para melhor compatibilidade com Vercel
   output: 'standalone',
   transpilePackages: ['leaflet', 'react-leaflet'],
-  // Desativa otimização experimental que pode causar problemas
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
   env: {
     // Suporta ambos os formatos para acessar no cliente e servidor
     SUPABASE_URL: process.env.SUPABASE_URL,

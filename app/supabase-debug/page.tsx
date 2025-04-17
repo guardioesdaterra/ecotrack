@@ -4,8 +4,29 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient-new";
 import { Button } from "@/components/ui/button";
 
+// Define proper types
+interface DbTestResult {
+  success: boolean;
+  error: any | null;
+  count: number | null;
+}
+
+interface EnvCheckResult {
+  supabaseUrl: string | null;
+  supabaseAnonKey: string | null;
+  environment: string | undefined;
+  isClient: boolean;
+  vercelEnv: string;
+}
+
+interface DebugData {
+  timestamp: string;
+  environment: EnvCheckResult;
+  dbTest: DbTestResult;
+}
+
 export default function SupabaseDebugPage() {
-  const [debug, setDebug] = useState<Record<string, any>>({});
+  const [debug, setDebug] = useState<DebugData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +36,7 @@ export default function SupabaseDebugPage() {
     
     try {
       // Check environment variables
-      const envCheck = {
+      const envCheck: EnvCheckResult = {
         supabaseUrl: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || null,
         supabaseAnonKey: 
           process.env.SUPABASE_ANON_KEY || 
@@ -27,7 +48,7 @@ export default function SupabaseDebugPage() {
       };
       
       // Try to fetch data
-      let dbTest = { success: false, error: null, count: null };
+      let dbTest: DbTestResult = { success: false, error: null, count: null };
       try {
         const { count, error } = await supabase
           .from('activities')
