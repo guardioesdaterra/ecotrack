@@ -2,22 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Leaflet popup custom styles */
+/* Leaflet specific styles - ensure they are applied */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
 .leaflet-popup-content-wrapper {
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  border: 1px solid rgba(6, 247, 247, 0.5) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 10px rgba(6, 247, 247, 0.3) !important;
+}
+
+.leaflet-popup-content {
+  color: white !important;
+  margin: 8px 12px !important;
+  line-height: 1.5 !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid rgba(6, 247, 247, 0.5) !important;
+  box-shadow: 0 0 10px rgba(6, 247, 247, 0.3) !important;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-control-zoom a {
+  color: white !important;
+  background-color: rgba(20, 20, 20, 0.8) !important;
+  border: 1px solid rgba(6, 247, 247, 0.5) !important;
+}
+
+.custom-activity-icon {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-.leaflet-popup-content {
-  color: black !important;
-  margin: 0 !important;
-  line-height: 1.5 !important;
+.activity-marker {
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 1px solid #06f7f7;
+  color: white;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(6, 247, 247, 0.5);
 }
 
-.leaflet-popup-tip {
-  background: transparent !important;
-  box-shadow: none !important;
+.activity-marker span {
+  display: none;
+}
+
+.activity-marker:hover {
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+  padding: 4px 8px;
+  z-index: 1000;
+}
+
+.activity-marker:hover span {
+  display: block;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dark-map {
+  filter: saturate(1.2) brightness(0.9);
 }
 
 body {

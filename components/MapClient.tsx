@@ -8,17 +8,20 @@ import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
 
-// CSS do Leaflet - deve vir antes dos componentes
+// CSS for Leaflet - can be imported directly in client components
 import "leaflet/dist/leaflet.css"
 
-// Carrega o Leaflet apenas no client-side
+// Load Leaflet only on client-side
 let L: any;
 if (typeof window !== 'undefined') {
-  L = require('leaflet')
-  require('leaflet/dist/leaflet.css')
+  try {
+    L = window.L || require('leaflet');
+  } catch (e) {
+    console.error("Error loading Leaflet:", e);
+  }
 }
 
-// Tipagem para o Leaflet
+// Type definition for Leaflet
 declare global {
   interface Window {
     L: typeof L;
@@ -28,7 +31,7 @@ declare global {
 // Import useMap directly (not dynamically) as it's a hook that can't be used with dynamic imports
 import { useMap as reactLeafletUseMap } from "react-leaflet"
 
-// Componentes do react-leaflet importados dinamicamente
+// Dynamically imported react-leaflet components
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
   {
@@ -78,7 +81,8 @@ interface Connection {
 function ActivityNode({ activity }: { activity: Activity }) {
   const [showPopup, setShowPopup] = useState(false)
 
-  const icon = L.divIcon({
+  // Only create icon when L is available
+  const icon = L && L.divIcon ? L.divIcon({
     html: `
       <div class="activity-marker">
         <span>${activity.title}</span>
@@ -88,7 +92,9 @@ function ActivityNode({ activity }: { activity: Activity }) {
     iconSize: [30, 30],
     iconAnchor: [15, 30],
     popupAnchor: [0, -30],
-  })
+  }) : null;
+
+  if (!icon) return null;
 
   return (
     <Marker
@@ -133,6 +139,8 @@ const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) =
   }, [])
 
   useEffect(() => {
+    if (!L || !map) return;
+    
     map.eachLayer((layer: any) => {
       if (layer instanceof L.Polyline) {
         map.removeLayer(layer)
@@ -182,6 +190,8 @@ function MapController() {
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   useEffect(() => {
+    if (!map) return;
+    
     const container = map.getContainer()
     if (document.documentElement.classList.contains('dark')) {
       container.classList.add("dark-map")
@@ -214,83 +224,56 @@ function MapController() {
 }
 
 export default function MapClient() {
-  const mapRef = useRef<any>(null)
   const [activities, setActivities] = useState<Activity[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    delete (L.Icon.Default.prototype as any)._getIconUrl
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    })
-  }, [])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        setLoading(true)
-        const { data, error: supabaseError } = await supabase
+        setIsLoading(true)
+        const { data, error } = await supabase
           .from('activities')
           .select('*')
-          .order('created_at', { ascending: false })
-
-        if (supabaseError) throw supabaseError
+          
+        if (error) {
+          console.error('Supabase error:', error)
+          return
+        }
         
-        // Add default color property if not present in data
-        const activitiesWithColor = (data || []).map(activity => ({
+        // Transform activities to match the Activity type including color
+        const transformedActivities = data.map(activity => ({
           ...activity,
-          color: activity.color || getRandomColor()
-        }))
+          color: getRandomColor()
+        })) as Activity[]
         
-        setActivities(activitiesWithColor as Activity[])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
+        setActivities(transformedActivities)
+      } catch (error) {
+        console.error("Error fetching activities:", error)
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
-
+    
     fetchActivities()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="w-full h-screen bg-black flex items-center justify-center">
-        <div className="h-16 w-16 rounded-full bg-neon-cyan animate-neon-pulse shadow-lg shadow-neon-cyan/50"></div>
-      </div>
-    )
-  }
+  if (isLoading) return <Loading />
 
-  if (error) {
-    return (
-      <div className="w-full h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-500">Error: {error}</div>
-      </div>
-    )
-  }
+  // Only render map components if window is defined
+  if (typeof window === 'undefined') return null;
 
   return (
-    <div className="w-full h-screen relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-neon-purple/10 to-neon-cyan/10 pointer-events-none z-[399]"></div>
-
+    <div className="relative w-full h-screen">
       <MapContainer
-        ref={mapRef}
         center={[20, 0]}
         zoom={2.5}
-        style={{ height: "100%", width: "100%" }}
+        className="w-full h-full bg-gray-900 z-0"
         zoomControl={false}
         attributionControl={false}
-        worldCopyJump={true}
-        minZoom={1.5}
-        maxZoom={7}
-        className="dark-map"
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
         />
         <ZoomControl position="bottomright" />
         <MapController />
@@ -298,11 +281,8 @@ export default function MapClient() {
         {activities.map((activity) => (
           <ActivityNode key={activity.id} activity={activity} />
         ))}
-        <ParticleEffect activities={activities} />
       </MapContainer>
-
-      <div className="absolute inset-0 pointer-events-none z-[399] bg-[url('/grid-overlay.png')] opacity-20 mix-blend-overlay"></div>
-      <div className="absolute inset-0 pointer-events-none z-[399] bg-[url('/scanline.png')] opacity-10 mix-blend-lighten" style={{ backgroundBlendMode: 'screen' }}></div>
+      <ParticleEffect activities={activities} />
     </div>
   )
 }

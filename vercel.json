@@ -21,8 +21,12 @@
       "continue": true
     },
     {
-      "src": "/_next/.*",
+      "src": "/_next/(.*)",
       "dest": "/_next/$1"
+    },
+    {
+      "src": "/node_modules/leaflet/dist/images/(.*)",
+      "dest": "/node_modules/leaflet/dist/images/$1"
     },
     {
       "handle": "filesystem"

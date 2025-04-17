@@ -26,6 +26,11 @@ export default function RootLayout({ children }: {
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link 
+          rel="stylesheet" 
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          crossOrigin=""
+        />
         <script
           src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           crossOrigin=""
