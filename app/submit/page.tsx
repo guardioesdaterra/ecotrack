@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabaseClient-new"
+import { supabase } from "@/lib/supabase-client"
 // Tenta ambos os formatos de variáveis de ambiente
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 import { Button } from "@/components/ui/button"

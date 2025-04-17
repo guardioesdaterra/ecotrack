@@ -1,25 +1,10 @@
-  "use client"
+"use client"
 
 import { useEffect, useRef, useState } from "react"
 import { useMap } from "react-leaflet"
 import { supabase } from "@/lib/supabaseClient"
 import L from "leaflet"
-
-interface Activity {
-  id: number
-  lat: number
-  lng: number
-  type: string
-  title: string
-  intensity: number
-  color: string
-}
-
-interface Connection {
-  id: number
-  from_activity_id: number
-  to_activity_id: number
-}
+import { ActivityWithVisuals, Connection } from "@/lib/types/supabase"
 
 interface Particle {
   x: number
@@ -34,7 +19,7 @@ interface Particle {
   trailLength: number
 }
 
-export function ParticleEffect({ activities }: { activities: Activity[] }) {
+export function ParticleEffect({ activities }: { activities: ActivityWithVisuals[] }) {
   const map = useMap()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const animationRef = useRef<number | null>(null)
@@ -52,7 +37,7 @@ export function ParticleEffect({ activities }: { activities: Activity[] }) {
           .select('*')
 
         if (error) throw error
-        setConnections(data as Connection[])
+        setConnections(data || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error')
         console.error('Error fetching connections:', err)
@@ -99,7 +84,6 @@ export function ParticleEffect({ activities }: { activities: Activity[] }) {
           // Create a new particle
           if (Math.random() < 0.03) {
             // Control particle density
-            const colorHue = 180 + Math.random() * 60
             particles.push({
               x: fromPoint.x,
               y: fromPoint.y,
@@ -107,7 +91,7 @@ export function ParticleEffect({ activities }: { activities: Activity[] }) {
               targetY: toPoint.y,
               speed: 0.8 + Math.random() * 1.8,
               size: 0.5  + Math.random() * 2.5,
-              color: fromActivity.color || '#ffffff',
+              color: fromActivity.color || getRandomColor(),
               alpha: 0.2 + Math.random() * 0.6,
               trail: [],
               trailLength: Math.floor(3 + Math.random() * 5),
@@ -198,18 +182,31 @@ export function ParticleEffect({ activities }: { activities: Activity[] }) {
     }
 
     map.on("move", updateParticles)
-    map.on("zoom", updateParticles)
 
-    // Cleanup
+    // Cleanup on unmount
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
-      map.getContainer().removeChild(canvas)
+      if (canvasRef.current && map.getContainer().contains(canvasRef.current)) {
+        map.getContainer().removeChild(canvasRef.current)
+      }
       map.off("move", updateParticles)
-      map.off("zoom", updateParticles)
     }
-  }, [map, activities, connections])
+  }, [map, connections, activities, loading, error])
 
   return null
+}
+
+// Helper function to get a random color
+function getRandomColor() {
+  const colors = [
+    "rgba(0, 255, 255,", // Cyan
+    "rgba(255, 0, 255,", // Magenta
+    "rgba(255, 255, 0,", // Yellow
+    "rgba(0, 255, 0,",   // Green
+    "rgba(0, 128, 255,", // Blue
+    "rgba(255, 0, 128,"  // Red
+  ]
+  return colors[Math.floor(Math.random() * colors.length)]
 }

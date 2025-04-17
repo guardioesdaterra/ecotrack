@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { checkSupabaseConnection } from '@/lib/supabaseClient-new';
+import { checkSupabaseConnection } from '@/lib/supabase-client';
 
 export function SupabaseEnvCheck() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');

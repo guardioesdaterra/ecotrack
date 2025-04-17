@@ -1,47 +1,44 @@
 import { useEffect, useState } from "react"
 import { useMap } from "react-leaflet"
-import { supabase } from "@/lib/supabaseClient"
+import { supabase } from "@/lib/supabase-client"
 import React from "react"
+import { ActivityWithVisuals, Connection } from "@/lib/types/supabase"
 
 declare const L: any
 
-interface Activity {
-  id: number
-  lat: number
-  lng: number
-  type: string
-  title: string
-  intensity: number
-  created_at: string
-}
-
-interface Connection {
-  id: number
-  from_activity_id: number
-  to_activity_id: number
-}
-
-export const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) => {
+export const ConnectionLines: React.FC<{ activities: ActivityWithVisuals[] }> = ({ activities }) => {
   const map = useMap()
   const [connections, setConnections] = useState<Connection[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchConnections = async () => {
-      const { data, error } = await supabase
-        .from('connections')
-        .select('*')
-      if (error) {
-        console.error('Supabase error:', error)
-        return
+      try {
+        const { data, error } = await supabase
+          .from('connections')
+          .select('*')
+        
+        if (error) {
+          throw error
+        }
+        
+        setConnections(data || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao buscar conexões')
+        console.error('Supabase error:', err)
+      } finally {
+        setIsLoading(false)
       }
-      setConnections(data as Connection[])
     }
+    
     fetchConnections()
   }, [])
 
   useEffect(() => {
-    if (!L) return
+    if (!L || !map || isLoading) return
 
+    // Limpar linhas existentes
     map.eachLayer((layer: any) => {
       if (layer instanceof L.Polyline) {
         map.removeLayer(layer)
@@ -70,9 +67,9 @@ export const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activiti
     })
 
     return () => {
-      lines.forEach(line => map.removeLayer(line))
+      lines.forEach(line => map && map.removeLayer(line))
     }
-  }, [map, activities, connections])
+  }, [map, activities, connections, isLoading])
 
   return null
 }

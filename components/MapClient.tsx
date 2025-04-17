@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react"
 import dynamic from 'next/dynamic'
 import Loading from '@/components/ui/loading'
-import { supabase } from "@/lib/supabaseClient-new"
+import { supabase } from "@/lib/supabase-client"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { initLeaflet } from "@/lib/leaflet-init"
+import { Activity, ActivityWithVisuals, Connection } from "@/lib/types/supabase"
 
 // CSS for Leaflet - can be imported directly in client components
 import "leaflet/dist/leaflet.css"
@@ -54,25 +55,8 @@ const ZoomControl = dynamic(
   { ssr: false }
 )
 
-// Define our Activity type to match the one in particle-effect.tsx
-interface Activity {
-  id: number
-  lat: number
-  lng: number
-  type: string
-  title: string
-  intensity: number
-  created_at: string
-  color: string // Added to match ParticleEffect's Activity type
-}
-
-interface Connection {
-  id: number
-  from_activity_id: number
-  to_activity_id: number
-}
-
-function ActivityNode({ activity }: { activity: Activity }) {
+// Componente para renderizar um único marcador de atividade
+function ActivityNode({ activity }: { activity: ActivityWithVisuals }) {
   const [showPopup, setShowPopup] = useState(false)
 
   // Only create icon when L is available
@@ -113,28 +97,40 @@ function ActivityNode({ activity }: { activity: Activity }) {
 }
 
 // Use the directly imported useMap hook
-const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) => {
+const ConnectionLines: React.FC<{ activities: ActivityWithVisuals[] }> = ({ activities }) => {
   // Using the directly imported hook
   const map = reactLeafletUseMap()
   const [connections, setConnections] = useState<Connection[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchConnections = async () => {
-      const { data, error } = await supabase
-        .from('connections')
-        .select('*')
-      if (error) {
-        console.error('Supabase error:', error)
-        return
+      try {
+        const { data, error } = await supabase
+          .from('connections')
+          .select('*')
+        
+        if (error) {
+          throw error
+        }
+        
+        setConnections(data || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao buscar conexões')
+        console.error('Supabase error:', err)
+      } finally {
+        setIsLoading(false)
       }
-      setConnections(data as Connection[])
     }
+    
     fetchConnections()
   }, [])
 
   useEffect(() => {
-    if (!L || !map) return;
+    if (!L || !map || isLoading) return;
     
+    // Limpar linhas existentes
     map.eachLayer((layer: any) => {
       if (layer instanceof L.Polyline) {
         map.removeLayer(layer)
@@ -163,9 +159,9 @@ const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) =
     })
 
     return () => {
-      lines.forEach(line => map.removeLayer(line))
+      lines.forEach(line => map && map.removeLayer(line))
     }
-  }, [map, activities, connections])
+  }, [map, activities, connections, isLoading])
 
   return null
 }
@@ -218,31 +214,64 @@ function MapController() {
 }
 
 export default function MapClient() {
-  const [activities, setActivities] = useState<Activity[]>([])
+  const [activities, setActivities] = useState<ActivityWithVisuals[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setIsLoading(true)
+        
+        // Verificar se o cliente Supabase está inicializado corretamente
+        if (!supabase) {
+          throw new Error('Cliente Supabase não inicializado')
+        }
+        
+        // Usar o método de count primeiro para verificar se a tabela está acessível
+        const countCheck = await supabase
+          .from('activities')
+          .select('*', { count: 'exact', head: true })
+          
+        if (countCheck.error) {
+          console.error('Erro na verificação preliminar:', countCheck.error)
+          throw countCheck.error
+        }
+        
+        // Agora buscar os dados completos
         const { data, error } = await supabase
           .from('activities')
           .select('*')
           
         if (error) {
-          console.error('Supabase error:', error)
-          return
+          console.error('Detalhes do erro Supabase:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          })
+          throw error
         }
         
-        // Transform activities to match the Activity type including color
+        if (!data) {
+          throw new Error('Dados não encontrados')
+        }
+        
+        // Transform activities to include a color property for visualization
         const transformedActivities = data.map(activity => ({
           ...activity,
           color: getRandomColor()
-        })) as Activity[]
+        })) satisfies ActivityWithVisuals[]
         
         setActivities(transformedActivities)
-      } catch (error) {
-        console.error("Error fetching activities:", error)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
+        setError(`Falha ao buscar atividades: ${errorMessage}`)
+        console.error("Erro detalhado ao buscar atividades:", {
+          error: err,
+          timestamp: new Date().toISOString(),
+          component: 'MapClient'
+        })
       } finally {
         setIsLoading(false)
       }
@@ -252,31 +281,55 @@ export default function MapClient() {
   }, [])
 
   if (isLoading) return <Loading />
+  
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96 bg-gray-100 dark:bg-gray-900 rounded-lg">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">
+            Erro ao carregar o mapa
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">{error}</p>
+        </div>
+      </div>
+    )
+  }
 
-  // Only render map components if window is defined
-  if (typeof window === 'undefined') return null;
+  if (activities.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96 bg-gray-100 dark:bg-gray-900 rounded-lg">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
+            Nenhuma atividade encontrada
+          </h3>
+          <p className="text-gray-500 dark:text-gray-500">
+            Não há atividades para exibir no mapa.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="relative w-full h-screen">
-      <MapContainer
-        center={[20, 0]}
-        zoom={2.5}
-        className="w-full h-full bg-gray-900 z-0"
+    <div className="h-[600px] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900">
+      <MapContainer 
+        className="h-full w-full"
         zoomControl={false}
-        attributionControl={false}
       >
         <TileLayer
-          url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ZoomControl position="bottomright" />
         <MapController />
-        <ConnectionLines activities={activities} />
-        {activities.map((activity) => (
+
+        {activities.map(activity => (
           <ActivityNode key={activity.id} activity={activity} />
         ))}
+
+        <ConnectionLines activities={activities} />
+        <ParticleEffect activities={activities} />
       </MapContainer>
-      <ParticleEffect activities={activities} />
     </div>
   )
 }
