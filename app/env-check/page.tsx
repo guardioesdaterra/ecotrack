@@ -44,11 +44,6 @@ export default function EnvCheckPage() {
               Teste Direto
             </a> - Teste a API do Supabase diretamente com fetch
           </li>
-          <li>
-            <a href="/supabase-debug" className="text-blue-500 hover:underline">
-              Debug Supabase
-            </a> - Diagnóstico detalhado do Supabase
-          </li>
         </ul>
       </div>
       
