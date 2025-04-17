@@ -21,8 +21,8 @@ export default function EnvCheckPage() {
           
           <div>
             <h3 className="font-medium mb-2">Variáveis Públicas do Supabase</h3>
-            <p>NEXT_PUBLIC_SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ definido' : '❌ não definido'}</p>
-            <p>NEXT_PUBLIC_SUPABASE_ANON_KEY: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ definido' : '❌ não definido'}</p>
+            <p>SUPABASE_URL: {process.env.SUPABASE_URL ? '✅ definido' : '❌ não definido'}</p>
+            <p>SUPABASE_ANON_KEY: {process.env.SUPABASE_ANON_KEY ? '✅ definido' : '❌ não definido'}</p>
           </div>
         </div>
       </div>
@@ -35,8 +35,8 @@ export default function EnvCheckPage() {
           <li>Clique em <strong>Environment Variables</strong> (Variáveis de Ambiente)</li>
           <li>Adicione as seguintes variáveis:
             <ul className="list-disc pl-5 mt-2">
-              <li><code>NEXT_PUBLIC_SUPABASE_URL</code>: URL do seu projeto no Supabase</li>
-              <li><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>: Chave anônima do seu projeto no Supabase</li>
+              <li><code>SUPABASE_URL</code>: URL do seu projeto no Supabase</li>
+              <li><code>SUPABASE_ANON_KEY</code>: Chave anônima do seu projeto no Supabase</li>
             </ul>
           </li>
           <li>Clique em <strong>Save</strong> (Salvar)</li>
