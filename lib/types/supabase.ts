@@ -18,10 +18,11 @@ export interface Activity {
 
 // Modelo de conexão entre atividades
 export interface Connection {
-  id: number
+  id: number | string
   from_activity_id: number
   to_activity_id: number
   created_at?: string
+  strength?: number
 }
 
 // Tipos para resposta de erro do Supabase

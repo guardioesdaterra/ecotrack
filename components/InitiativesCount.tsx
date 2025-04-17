@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { supabase, isSupabaseInitialized } from "@/lib/supabase-client";
 import { SupabaseError } from "@/lib/types/supabase";
+import { logError, getUserFriendlyErrorMessage } from "@/lib/error-handler";
 
 export function InitiativesCount() {
   const [count, setCount] = useState<number | null>(null);
@@ -15,6 +16,11 @@ export function InitiativesCount() {
         setLoading(true);
         setError(null);
         
+        // Verificar inicialização do Supabase
+        if (!isSupabaseInitialized()) {
+          throw new Error("Cliente Supabase não inicializado");
+        }
+        
         const { count, error } = await supabase
           .from("activities")
           .select("*", { count: "exact", head: true });
@@ -25,10 +31,17 @@ export function InitiativesCount() {
         
         setCount(count ?? 0);
       } catch (err) {
-        const supabaseError = err as SupabaseError;
-        setError(supabaseError.message || "Erro ao buscar dados");
+        // Usando o manipulador de erros centralizado
+        const errorMessage = getUserFriendlyErrorMessage(err);
+        setError(errorMessage);
         setCount(null);
-        console.error("Erro ao buscar contagem de atividades:", err);
+        
+        // Log estruturado com detalhes completos para diagnóstico
+        logError("InitiativesCount.fetchCount", err, {
+          component: "InitiativesCount",
+          operation: "fetchCount",
+          timestamp: new Date().toISOString()
+        });
       } finally {
         setLoading(false);
       }

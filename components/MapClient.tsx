@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react"
 import dynamic from 'next/dynamic'
 import Loading from '@/components/ui/loading'
-import { supabase } from "@/lib/supabase-client"
+import { supabase, isSupabaseInitialized } from "@/lib/supabase-client"
 import { Badge } from "@/components/ui/badge"
 import { ParticleEffect } from "@/components/particle-effect"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { initLeaflet } from "@/lib/leaflet-init"
 import { Activity, Connection } from "@/lib/types/supabase"
+import { logError, getUserFriendlyErrorMessage } from "@/lib/error-handler"
 
 // CSS for Leaflet - can be imported directly in client components
 import "leaflet/dist/leaflet.css"
@@ -69,6 +70,93 @@ function getColorByType(type: string): string {
   return TYPE_COLOR_MAP[type] || "#FF0000"; // Vermelho como cor padrão
 }
 
+// Helper function to generate random connections between activities
+function generateRandomConnections(activities: Activity[], connectionDensity = 0.3): Connection[] {
+  if (!activities.length) return []
+  
+  const connections: Connection[] = []
+  const numActivities = activities.length
+  
+  // Determine number of connections based on density (0-1)
+  // Higher density means more connections
+  const maxPossibleConnections = (numActivities * (numActivities - 1)) / 2
+  const targetNumConnections = Math.max(
+    1,
+    Math.floor(maxPossibleConnections * connectionDensity)
+  )
+  
+  // Create a set to track which connections we've already created
+  const connectionSet = new Set<string>()
+  
+  while (connections.length < targetNumConnections && connectionSet.size < maxPossibleConnections) {
+    // Pick two random activities
+    const fromIndex = Math.floor(Math.random() * numActivities)
+    let toIndex = Math.floor(Math.random() * numActivities)
+    
+    // Make sure we're not connecting an activity to itself
+    while (toIndex === fromIndex) {
+      toIndex = Math.floor(Math.random() * numActivities)
+    }
+    
+    const fromActivity = activities[fromIndex]
+    const toActivity = activities[toIndex]
+    
+    // Create a unique identifier for this connection (ordered to prevent duplicates)
+    const connectionKey = [fromActivity.id, toActivity.id].sort().join('-')
+    
+    // If we haven't created this connection yet, add it
+    if (!connectionSet.has(connectionKey)) {
+      connectionSet.add(connectionKey)
+      connections.push({
+        id: connectionKey,
+        from_activity_id: fromActivity.id,
+        to_activity_id: toActivity.id,
+        strength: Math.random() * 0.8 + 0.2 // Random strength between 0.2 and 1.0
+      })
+    }
+  }
+  
+  return connections
+}
+
+// Function to generate random mock activities
+function generateMockActivities(count = 20): Activity[] {
+  const activityTypes = ['reforestation', 'cleanup', 'renewable', 'conservation']
+  const activities: Activity[] = []
+  
+  for (let i = 1; i <= count; i++) {
+    // Generate a random location
+    // Latitude range: -60 to 70 (avoiding extreme poles)
+    // Longitude range: -180 to 180
+    const lat = (Math.random() * 130 - 60) + (Math.random() * 10 - 5)
+    const lng = (Math.random() * 360 - 180) + (Math.random() * 20 - 10)
+    
+    // Random type from the available types
+    const type = activityTypes[Math.floor(Math.random() * activityTypes.length)]
+    
+    // Random intensity between 1 and 10
+    const intensity = Math.floor(Math.random() * 10) + 1
+    
+    // Random date within the last year
+    const createdDate = new Date()
+    createdDate.setDate(createdDate.getDate() - Math.floor(Math.random() * 365))
+    
+    activities.push({
+      id: i,
+      title: `${type.charAt(0).toUpperCase() + type.slice(1)} Project ${i}`,
+      type,
+      description: `A mock ${type} activity for demonstration purposes.`,
+      lat,
+      lng,
+      intensity,
+      created_at: createdDate.toISOString(),
+      user_id: `user-${Math.floor(Math.random() * 10) + 1}`
+    })
+  }
+  
+  return activities
+}
+
 // Componente para renderizar um único marcador de atividade
 function ActivityNode({ activity }: { activity: Activity }) {
   const [showPopup, setShowPopup] = useState(false)
@@ -115,34 +203,30 @@ const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) =
   // Using the directly imported hook
   const map = reactLeafletUseMap()
   const [connections, setConnections] = useState<Connection[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [mapReady, setMapReady] = useState(false)
 
+  // Wait for map to be properly initialized
   useEffect(() => {
-    const fetchConnections = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('connections')
-          .select('*')
-        
-        if (error) {
-          throw error
-        }
-        
-        setConnections(data || [])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao buscar conexões')
-        console.error('Supabase error:', err)
-      } finally {
-        setIsLoading(false)
-      }
+    if (map) {
+      // Add a small delay to ensure map bounds are properly initialized
+      const timer = setTimeout(() => {
+        setMapReady(true)
+      }, 500)
+      return () => clearTimeout(timer)
     }
-    
-    fetchConnections()
-  }, [])
+  }, [map])
+
+  // Generate random connections when activities change
+  useEffect(() => {
+    if (activities.length > 0) {
+      // Generate random connections with a moderate density
+      const randomConnections = generateRandomConnections(activities, 0.35)
+      setConnections(randomConnections)
+    }
+  }, [activities])
 
   useEffect(() => {
-    if (!L || !map || isLoading) return;
+    if (!L || !map || !mapReady || !connections.length) return;
     
     // Limpar linhas existentes
     map.eachLayer((layer: any) => {
@@ -154,28 +238,41 @@ const ConnectionLines: React.FC<{ activities: Activity[] }> = ({ activities }) =
     const lines: any[] = []
 
     connections.forEach((connection) => {
-      const fromActivity = activities.find(a => a.id === connection.from_activity_id)
-      const toActivity = activities.find(a => a.id === connection.to_activity_id)
-      if (fromActivity && toActivity) {
-        const latlngs: any[] = [
-          [fromActivity.lat, fromActivity.lng],
-          [toActivity.lat, toActivity.lng],
-        ]
+      try {
+        const fromActivity = activities.find(a => a.id === connection.from_activity_id)
+        const toActivity = activities.find(a => a.id === connection.to_activity_id)
+        
+        if (fromActivity && toActivity) {
+          const latlngs: any[] = [
+            [fromActivity.lat, fromActivity.lng],
+            [toActivity.lat, toActivity.lng],
+          ]
 
-        const line = L.polyline(latlngs, {
-          color: getColorByType(fromActivity.type),
-          weight: 3,
-          opacity: 0.7,
-        })
-        line.addTo(map)
-        lines.push(line)
+          const line = L.polyline(latlngs, {
+            color: getColorByType(fromActivity.type),
+            weight: 2 + (connection.strength || 0.5) * 2,
+            opacity: 0.5 + (connection.strength || 0.5) * 0.3,
+            dashArray: connection.strength && connection.strength < 0.5 ? "5, 5" : null
+          })
+          
+          line.addTo(map)
+          lines.push(line)
+        }
+      } catch (error) {
+        console.error("Error creating connection line:", error);
       }
     })
 
     return () => {
-      lines.forEach(line => map && map.removeLayer(line))
+      lines.forEach(line => {
+        try {
+          if (map && line) map.removeLayer(line)
+        } catch (error) {
+          console.error("Error removing line:", error);
+        }
+      })
     }
-  }, [map, activities, connections, isLoading])
+  }, [map, activities, connections, mapReady])
 
   return null
 }
@@ -226,59 +323,23 @@ export default function MapClient() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchActivities = async () => {
+    // Use setTimeout to simulate network delay
+    const timer = setTimeout(() => {
       try {
-        setIsLoading(true)
-        
-        // Verificar se o cliente Supabase está inicializado corretamente
-        if (!supabase) {
-          throw new Error('Cliente Supabase não inicializado')
-        }
-        
-        // Usar o método de count primeiro para verificar se a tabela está acessível
-        const countCheck = await supabase
-          .from('activities')
-          .select('*', { count: 'exact', head: true })
-          
-        if (countCheck.error) {
-          console.error('Erro na verificação preliminar:', countCheck.error)
-          throw countCheck.error
-        }
-        
-        // Agora buscar os dados completos
-        const { data, error } = await supabase
-          .from('activities')
-          .select('*')
-          
-        if (error) {
-          console.error('Detalhes do erro Supabase:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-            hint: error.hint
-          })
-          throw error
-        }
-        
-        if (!data) {
-          throw new Error('Dados não encontrados')
-        }
-        
-        setActivities(data)
+        // Generate mock activities instead of fetching from Supabase
+        const mockActivities = generateMockActivities(25)
+        setActivities(mockActivities)
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
-        setError(`Falha ao buscar atividades: ${errorMessage}`)
-        console.error("Erro detalhado ao buscar atividades:", {
-          error: err,
-          timestamp: new Date().toISOString(),
-          component: 'MapClient'
-        })
+        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+        setError(`Falha ao gerar atividades: ${errorMessage}`);
+        
+        console.error('Error generating mock activities:', err);
       } finally {
         setIsLoading(false)
       }
-    }
+    }, 800); // Short delay to simulate network request
     
-    fetchActivities()
+    return () => clearTimeout(timer);
   }, [])
 
   if (isLoading) return <Loading />

@@ -1,70 +1,96 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { checkSupabaseConnection } from '@/lib/supabase-client';
+import { checkSupabaseConnection, isSupabaseInitialized } from '@/lib/supabase-client';
+import { logError, getUserFriendlyErrorMessage } from '@/lib/error-handler';
+import { Button } from '@/components/ui/button';
 
 export function SupabaseEnvCheck() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verificando conexão com o Supabase...');
   const [details, setDetails] = useState<any>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
+
+  async function checkConnection() {
+    try {
+      setStatus('loading');
+      setMessage('Verificando conexão com o Supabase...');
+      setHasChecked(true);
+      
+      // Verificar se as variáveis de ambiente estão definidas e o cliente inicializado
+      if (!isSupabaseInitialized()) {
+        setStatus('error');
+        setMessage("Cliente Supabase não inicializado. Verifique as variáveis de ambiente.");
+        setDetails({
+          message: "O cliente Supabase não está inicializado corretamente",
+          hint: "Verifique as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY",
+          environment: process.env.NODE_ENV
+        });
+        return;
+      }
+      
+      const result = await checkSupabaseConnection();
+      
+      if (!result.success) {
+        setStatus('error');
+        setMessage(`Erro ao conectar com o Supabase: ${getUserFriendlyErrorMessage(result.error)}`);
+        
+        // Log estruturado do erro
+        logError('SupabaseEnvCheck.checkConnection', result.error, {
+          component: 'SupabaseEnvCheck',
+          operation: 'checkConnection',
+          timestamp: new Date().toISOString()
+        });
+        
+        setDetails({
+          error: result.error,
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV
+        });
+        return;
+      }
+      
+      setStatus('success');
+      setMessage(`Conexão com o Supabase estabelecida com sucesso! Encontramos ${result.count} atividades.`);
+      setDetails({
+        success: true,
+        count: result.count,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      setStatus('error');
+      
+      const errorMessage = getUserFriendlyErrorMessage(error);
+      setMessage(`Erro ao verificar conexão: ${errorMessage}`);
+      
+      // Log estruturado do erro
+      logError('SupabaseEnvCheck.checkConnection', error, {
+        component: 'SupabaseEnvCheck',
+        operation: 'checkConnection',
+        timestamp: new Date().toISOString()
+      });
+      
+      setDetails({
+        error: error,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV
+      });
+    }
+  }
 
   useEffect(() => {
     // Prevent multiple calls
     if (hasChecked) return;
     
-    async function checkConnection() {
-      try {
-        setHasChecked(true);
-        
-        // Verificar se as variáveis de ambiente estão definidas no cliente
-        const envVars = {
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
-          supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
-        };
-        
-        if (!envVars.supabaseUrl || !envVars.supabaseAnonKey) {
-          setStatus('error');
-          setMessage("Variáveis de ambiente SUPABASE_URL ou SUPABASE_ANON_KEY não estão definidas no cliente");
-          setDetails({
-            hasUrl: !!envVars.supabaseUrl,
-            hasKey: !!envVars.supabaseAnonKey,
-            environment: process.env.NODE_ENV
-          });
-          return;
-        }
-        
-        const { count, error } = await checkSupabaseConnection();
-        
-        if (error) {
-          throw error;
-        }
-        
-        setStatus('success');
-        setMessage(`Conexão com o Supabase estabelecida com sucesso! Encontramos ${count} atividades.`);
-        setDetails({
-          hasUrl: true,
-          hasKey: true
-        });
-      } catch (error: any) {
-        console.error('Erro ao conectar com o Supabase:', error);
-        setStatus('error');
-        setMessage(`Erro ao conectar com o Supabase: ${error.message || 'Erro desconhecido'}`);
-        setDetails({
-          error: error.message,
-          environment: process.env.NODE_ENV
-        });
-      }
-    }
-    
     checkConnection();
   }, [hasChecked]);
 
   const bgColor = status === 'loading' 
-    ? 'bg-yellow-100 dark:bg-yellow-900' 
+    ? 'bg-yellow-100 dark:bg-yellow-900/30' 
     : status === 'success' 
-      ? 'bg-green-100 dark:bg-green-900' 
-      : 'bg-red-100 dark:bg-red-900';
+      ? 'bg-green-100 dark:bg-green-900/30' 
+      : 'bg-red-100 dark:bg-red-900/30';
       
   const textColor = status === 'loading' 
     ? 'text-yellow-800 dark:text-yellow-200' 
@@ -73,7 +99,7 @@ export function SupabaseEnvCheck() {
       : 'text-red-800 dark:text-red-200';
 
   return (
-    <div className={`p-4 mb-4 rounded-lg ${bgColor}`}>
+    <div className={`p-4 mb-4 rounded-lg border ${bgColor}`}>
       <div className="flex items-center">
         {status === 'loading' && (
           <div className="mr-2 animate-spin h-5 w-5 border-2 border-yellow-500 rounded-full border-t-transparent"></div>
@@ -92,8 +118,33 @@ export function SupabaseEnvCheck() {
       </div>
       <div className={`mt-2 ${textColor}`}>
         <p>{message}</p>
-        {details && (
-          <pre className="mt-2 p-2 bg-black bg-opacity-10 rounded text-sm overflow-auto">
+        
+        <div className="flex gap-2 mt-4">
+          {status === 'error' && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={checkConnection}
+              className="text-xs"
+            >
+              Tentar Novamente
+            </Button>
+          )}
+          
+          {details && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => setShowDetails(!showDetails)}
+              className="text-xs"
+            >
+              {showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes'}
+            </Button>
+          )}
+        </div>
+        
+        {showDetails && details && (
+          <pre className="mt-2 p-2 bg-black bg-opacity-10 dark:bg-white dark:bg-opacity-5 rounded text-sm overflow-auto">
             {JSON.stringify(details, null, 2)}
           </pre>
         )}
